@@ -6,6 +6,7 @@ import re
 import csv
 import pandas as pd
 import time
+import pymongo as mongo
 
 """Returns information about the most valuable hash per bitcoin per minute via Scraping
 Parameters:
@@ -59,10 +60,28 @@ while True:
     stripspace = removNumLine.lstrip()
     splitthem = stripspace.split(" ")
     
-    hashes = open("hashes.txt", "a")
-    hashes.write(splittem)
-    hashes.write("\n")
-    hashes.close()
+    ## Connecting to Mongo without security
+    client = mongo.MongoClient("mongodb://127.0.0.1:27017")
+
+    ## Database
+    bitcoinDatabase = client["bitcoindatabase"]
+
+    ## Collection
+    valuableCollection = bitcoinDatabase["valuablecollection"]
+
+    ## Data 
+    valuableBitcoin = {
+        "Hash": splitthem[0],
+        "Time": splitthem[2],
+        "BTC": splitthem[4],
+        "USD": splitthem[6]
+    }
+
+    ## Inserting data 
+    valuable = valuableCollection.insert_one(valuableBitcoin)
+
+    ## printing data 
+    ## print(valuable.inserted_id)
     
     startTime = time.time()
     time.sleep(60.0) - ((time.time() - startTime) % 60.0)
