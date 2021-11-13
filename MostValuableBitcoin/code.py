@@ -71,10 +71,7 @@ while True:
 
     ## Data 
     valuableBitcoin = {
-        "Hash": splitthem[0],
-        "Time": splitthem[1],
-        "BTC": splitthem[2],
-        "USD": splitthem[3]
+        "Hash": splitthem[0], "Time": splitthem[1], "BTC": splitthem[2], "USD": splitthem[3]
     }
 
     ## Inserting data 
