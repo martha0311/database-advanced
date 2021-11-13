@@ -58,7 +58,7 @@ while True:
     jointhem = "".join([str(element) for element in space_nextline[1]])
     removNumLine = re.sub(r"^\d* ", "", jointhem)
     stripspace = removNumLine.lstrip()
-    splitthem = stripspace.split(" ")
+    splitthem = stripspace.split("  ")
     
     ## Connecting to Mongo without security
     client = mongo.MongoClient("mongodb://127.0.0.1:27017")
