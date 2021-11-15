@@ -1,22 +1,13 @@
-from pip._vendor.requests import get
-import json
-from random import randint
-from bs4 import BeautifulSoup
 import re
 import csv
-import pandas as pd
 import time
+import json
+import redis
+import pandas as pd
 import pymongo as mongo
+from requests import get
+from bs4 import BeautifulSoup
 
-"""Returns information about the most valuable hash per bitcoin per minute via Scraping
-Parameters:
-  None
-Return Values:
-  hash (String)
-  Time (string)
-  amount (BTC) (String)
-  amount (USD) (String)
-"""
 url = 'https://www.blockchain.com/btc/unconfirmed-transactions'
 res = get(url).text
 soup = BeautifulSoup(res, 'html.parser')
@@ -59,26 +50,61 @@ while True:
     removNumLine = re.sub(r"^\d* ", "", jointhem)
     stripspace = removNumLine.lstrip()
     splitthem = stripspace.split("  ")
+
+    ## Connecting to redis with authentication
+    redisClient =redis.Redis(
+        host = 'localhost',
+        port = 6379,
+        db = 0,
+    )
+
+    ## setting the keys and values to redis for 1 minute
+    redisClient.set(
+        "Hash", splitthem[0], ex = 60
+    )
+    redisClient.set(
+        "Time", splitthem[1], ex = 60
+    )
+    redisClient.set(
+        "BTC", splitthem[2], ex = 60
+    )
+    redisClient.set(
+        "USD", splitthem[3], ex = 60
+    )
+
+    ## getting the values from redis
+    redisHash = redisClient.get(
+        "Hash"
+    )
+    redisTime = redisClient.get(
+        "Time"
+    )
+    redisBTC = redisClient.get(
+        "BTC"
+    )
+    redisUSD = redisClient.get(
+        "USD"
+    )
     
     ## Connecting to Mongo without security
-    client = mongo.MongoClient("mongodb://127.0.0.1:27017")
+    mongoclient = mongo.MongoClient("mongodb://localhost:27017")
 
     ## Database
-    bitcoinDatabase = client["bitcoindatabase"]
+    bitcoinDatabase = mongoclient["bitcoindatabase"]
 
     ## Collection
     valuableCollection = bitcoinDatabase["valuablecollection"]
 
     ## Data 
-    valuableBitcoin = {
-        "Hash": splitthem[0], "Time": splitthem[1], "BTC": splitthem[2], "USD": splitthem[3]
+    valuableBitcoin = { 
+        "Hash": redisHash, 
+        "Time": redisTime, 
+        "BTC": redisBTC, 
+        "USD": redisUSD
     }
 
     ## Inserting data 
     valuable = valuableCollection.insert_one(valuableBitcoin)
-
-    ## printing data 
-    ## print(valuable.inserted_id)
     
     startTime = time.time()
-    time.sleep(60.0) - ((time.time() - startTime) % 60.0)
+    time.sleep(60.0 - ((time.time() - startTime) % 60.0))
